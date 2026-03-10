@@ -64,13 +64,16 @@ async function createRoadmap(milestone) {
 
 async function runAutomation() {
   const ideas = await getStartupIdeas();
+  console.log(`Found ${ideas.length} entries in the Ideas database.`);
 
+  let processedCount = 0;
   for (const idea of ideas) {
     const ideaName = idea.properties["Idea Name"]?.title[0]?.plain_text;
     const goal = idea.properties["Goal"]?.rich_text[0]?.plain_text;
 
     if (!ideaName) continue;
 
+    processedCount++;
     console.log("Processing idea:", ideaName);
 
     const tasks = await generateTasks(ideaName, goal);
@@ -88,6 +91,12 @@ async function runAutomation() {
     await createRoadmap("Launch MVP");
 
     console.log("Roadmap created for:", ideaName);
+  }
+
+  if (processedCount === 0 && ideas.length > 0) {
+    console.warn("Found entries, but none had a valid 'Idea Name'. Please check your Notion database.");
+  } else if (ideas.length === 0) {
+    console.warn("The Ideas database is empty.");
   }
 }
 
