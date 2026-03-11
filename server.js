@@ -14,6 +14,7 @@ const searchMarket = require("./search");
 const STARTUP_DB = process.env.STARTUP_DB;
 const TASK_DB = process.env.TASK_DB;
 const ROADMAP_DB = process.env.ROADMAP_DB;
+const COMPETITOR_DB = process.env.COMPETITOR_DB;
 
 /**
  * 1. Initialize the MCP Server
@@ -50,6 +51,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             idea: { type: "string", description: "The startup idea to research" },
           },
           required: ["idea"],
+        },
+      },
+      {
+        name: "save_competitor_research",
+        description: "Save a found competitor into the Notion database.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            ideaId: { type: "string", description: "Relation to the startup idea" },
+            name: { type: "string", description: "Competitor name" },
+            url: { type: "string", description: "Competitor website" },
+            description: { type: "string", description: "What they do" },
+          },
+          required: ["ideaId", "name", "url"],
         },
       },
       {
@@ -131,6 +146,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { 
         content: [{ type: "text", text: `Market Research for ${args.idea}:\n\n${research.answer}\n\nKey Competitors:\n${research.results.map(r => `- ${r.title}: ${r.url}`).join("\n")}` }] 
       };
+    }
+
+    if (name === "save_competitor_research") {
+      if (!COMPETITOR_DB) throw new Error("COMPETITOR_DB not set in .env");
+
+      await notion.pages.create({
+        parent: { database_id: COMPETITOR_DB },
+        properties: {
+          Name: { title: [{ text: { content: args.name } }] },
+          URL: { url: args.url },
+          "Description": { rich_text: [{ text: { content: args.description || "No description provided." } }] },
+          "Related Idea": { relation: [{ id: args.ideaId }] },
+        },
+      });
+      return { content: [{ type: "text", text: `Saved competitor: ${args.name}` }] };
     }
 
     if (name === "create_prd_page") {
