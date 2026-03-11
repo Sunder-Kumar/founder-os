@@ -90,6 +90,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["taskName", "ideaId"],
         },
       },
+      {
+        name: "create_roadmap_milestone",
+        description: "Create a milestone in the Notion Roadmap database.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            milestone: { type: "string", description: "The name of the milestone (e.g., 'Launch MVP')" },
+          },
+          required: ["milestone"],
+        },
+      },
     ],
   };
 });
@@ -160,6 +171,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         },
       });
       return { content: [{ type: "text", text: `Successfully created task: ${args.taskName}` }] };
+    }
+
+    if (name === "create_roadmap_milestone") {
+      await notion.pages.create({
+        parent: { database_id: ROADMAP_DB },
+        properties: {
+          Milestone: { title: [{ text: { content: args.milestone } }] },
+          Status: { select: { name: "Planned" } },
+        },
+      });
+      return { content: [{ type: "text", text: `Successfully created roadmap milestone: ${args.milestone}` }] };
     }
 
     throw new Error(`Tool not found: ${name}`);
