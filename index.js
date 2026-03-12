@@ -1,6 +1,7 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const notion = require("./notion");
-const generateTasks = require("./ai");
+const { generateTasks } = require("./ai");
 
 const STARTUP_DB = process.env.STARTUP_DB;
 const TASK_DB = process.env.TASK_DB;

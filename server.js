@@ -1,4 +1,5 @@
-require("dotenv").config({ quiet: true });
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env"), quiet: true });
 const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
 const {
@@ -166,21 +167,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === "create_prd_page") {
       const prd = await generatePRD(args.ideaName, args.goal, args.marketResearch || "N/A");
       
+      const children = [
+        { heading_1: { rich_text: [{ text: { content: "Executive Summary" } }] } },
+        { paragraph: { rich_text: [{ text: { content: prd.summary || "No summary provided." } }] } },
+        { heading_1: { rich_text: [{ text: { content: "Problem Statement" } }] } },
+        { paragraph: { rich_text: [{ text: { content: prd.problem || "No problem statement provided." } }] } },
+        { heading_1: { rich_text: [{ text: { content: "Core Features" } }] } }
+      ];
+
+      // Add each feature as a separate bullet point
+      if (prd.features && Array.isArray(prd.features)) {
+        prd.features.forEach(feature => {
+          children.push({
+            bulleted_list_item: { rich_text: [{ text: { content: feature } }] }
+          });
+        });
+      } else {
+        children.push({ paragraph: { rich_text: [{ text: { content: "No features specified." } }] } });
+      }
+
+      children.push(
+        { heading_1: { rich_text: [{ text: { content: "Tech Stack" } }] } },
+        { callout: { rich_text: [{ text: { content: prd.techStack || "Not specified." } }], icon: { emoji: "🛠️" } } }
+      );
+
       await notion.pages.create({
-        parent: { page_id: args.ideaId }, // Nested under the idea page
+        parent: { page_id: args.ideaId },
         properties: {
-          title: [{ text: { content: `PRD: ${args.ideaName}` } }],
+          title: {
+            title: [{ text: { content: `PRD: ${args.ideaName}` } }]
+          }
         },
-        children: [
-          { heading_1: { rich_text: [{ text: { content: "Executive Summary" } }] } },
-          { paragraph: { rich_text: [{ text: { content: prd.summary } }] } },
-          { heading_1: { rich_text: [{ text: { content: "Problem Statement" } }] } },
-          { paragraph: { rich_text: [{ text: { content: prd.problem } }] } },
-          { heading_1: { rich_text: [{ text: { content: "Core Features" } }] } },
-          { bulleted_list_item: { rich_text: prd.features.map(f => ({ text: { content: f } })) } }, // Simplification
-          { heading_1: { rich_text: [{ text: { content: "Tech Stack" } }] } },
-          { callout: { rich_text: [{ text: { content: prd.techStack } }], icon: { emoji: "🛠️" } } }
-        ]
+        children: children
       });
 
       return { content: [{ type: "text", text: "Successfully created PRD page as a sub-page of your idea." }] };
@@ -216,8 +234,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     throw new Error(`Tool not found: ${name}`);
   } catch (error) {
+    console.error(`Error executing tool ${name}:`, error.body || error.message || error);
     return {
-      content: [{ type: "text", text: `Error: ${error.message}` }],
+      content: [{ type: "text", text: `Error: ${error.message}${error.body ? ` - ${JSON.parse(error.body).message}` : ""}` }],
       isError: true,
     };
   }

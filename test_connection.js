@@ -1,6 +1,7 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const notion = require("./notion");
-const generateTasks = require("./ai");
+const { generateTasks } = require("./ai");
 
 async function testConnection() {
   console.log("--- Testing Connections ---");
