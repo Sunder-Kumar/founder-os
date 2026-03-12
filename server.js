@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
 const {
@@ -10,7 +10,7 @@ const notion = require("./notion");
 const { generateTasks, generatePRD } = require("./ai");
 const searchMarket = require("./search");
 
-// Database IDs from .env
+// ... (rest of the code)
 const STARTUP_DB = process.env.STARTUP_DB;
 const TASK_DB = process.env.TASK_DB;
 const ROADMAP_DB = process.env.ROADMAP_DB;

@@ -1,5 +1,5 @@
 const axios = require("axios");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
