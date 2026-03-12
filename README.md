@@ -94,4 +94,4 @@ node index.js
 - **MCP Connection**: If Claude cannot connect, check the logs or ensure you are using the absolute path to `server.js` in your config.
 
 ## 📄 License
-ISC
+MIT
