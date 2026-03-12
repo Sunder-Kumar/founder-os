@@ -117,6 +117,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["milestone"],
         },
       },
+      {
+        name: "generate_status_report",
+        description: "Generate a weekly status report based on completed tasks in Notion.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            ideaId: { type: "string", description: "The Notion UUID of the startup idea" },
+          },
+          required: ["ideaId"],
+        },
+      },
     ],
   };
 });
@@ -172,8 +183,51 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         { paragraph: { rich_text: [{ text: { content: prd.summary || "No summary provided." } }] } },
         { heading_1: { rich_text: [{ text: { content: "Problem Statement" } }] } },
         { paragraph: { rich_text: [{ text: { content: prd.problem || "No problem statement provided." } }] } },
-        { heading_1: { rich_text: [{ text: { content: "Core Features" } }] } }
+        
+        { heading_1: { rich_text: [{ text: { content: "Market Gap Analysis" } }] } }
       ];
+
+      // Add Table for Gap Analysis
+      if (prd.competitorAnalysis && Array.isArray(prd.competitorAnalysis)) {
+        const tableRows = [
+          {
+            table_row: {
+              cells: [
+                [{ text: { content: "Competitor" } }],
+                [{ text: { content: "Strength" } }],
+                [{ text: { content: "Weakness" } }],
+                [{ text: { content: "Our Opportunity (Gap)" } }]
+              ]
+            }
+          }
+        ];
+
+        prd.competitorAnalysis.forEach(c => {
+          tableRows.push({
+            table_row: {
+              cells: [
+                [{ text: { content: c.name || "N/A" } }],
+                [{ text: { content: c.strength || "N/A" } }],
+                [{ text: { content: c.weakness || "N/A" } }],
+                [{ text: { content: c.gap || "N/A" } }]
+              ]
+            }
+          });
+        });
+
+        children.push({
+          table: {
+            table_width: 4,
+            has_column_header: true,
+            has_row_header: false,
+            children: tableRows
+          }
+        });
+      }
+
+      children.push(
+        { heading_1: { rich_text: [{ text: { content: "Core Features" } }] } }
+      );
 
       // Add each feature as a separate bullet point
       if (prd.features && Array.isArray(prd.features)) {
@@ -182,9 +236,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             bulleted_list_item: { rich_text: [{ text: { content: feature } }] }
           });
         });
-      } else {
-        children.push({ paragraph: { rich_text: [{ text: { content: "No features specified." } }] } });
       }
+
+      // Visual Roadmap using Mermaid.js
+      children.push(
+        { heading_1: { rich_text: [{ text: { content: "Visual Roadmap" } }] } },
+        { 
+          code: { 
+            rich_text: [{ text: { content: `gantt
+    title ${args.ideaName} MVP Roadmap
+    dateFormat  YYYY-MM-DD
+    section Phase 1: Foundation
+    Research & Discovery :done, des1, 2026-03-12, 3d
+    Core Architecture    :active, des2, after des1, 5d
+    section Phase 2: Build
+    Feature Development  :des3, after des2, 10d
+    UI Implementation    :des4, after des3, 7d
+    section Phase 3: Launch
+    Testing & QA         :des5, after des4, 5d
+    MVP Launch           :milestone, des6, after des5, 0d` } }],
+            language: "mermaid"
+          }
+        }
+      );
 
       children.push(
         { heading_1: { rich_text: [{ text: { content: "Tech Stack" } }] } },
@@ -201,7 +275,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         children: children
       });
 
-      return { content: [{ type: "text", text: "Successfully created PRD page as a sub-page of your idea." }] };
+      return { content: [{ type: "text", text: "Successfully created PRD page with Gap Analysis and Mermaid Roadmap." }] };
     }
 
     if (name === "generate_mvp_tasks") {
@@ -230,6 +304,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         },
       });
       return { content: [{ type: "text", text: `Successfully created roadmap milestone: ${args.milestone}` }] };
+    }
+
+    if (name === "generate_status_report") {
+      const response = await notion.databases.query({
+        database_id: TASK_DB,
+        filter: {
+          property: "Related Idea",
+          relation: { contains: args.ideaId }
+        }
+      });
+
+      const tasks = response.results;
+      const completed = tasks.filter(t => t.properties.Status?.select?.name === "Done").length;
+      const total = tasks.length;
+      const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      const report = `📊 **Progress Report**\nCompletion: ${progress}%\nTasks: ${completed}/${total} completed.`;
+
+      await notion.blocks.children.append({
+        block_id: args.ideaId,
+        children: [
+          {
+            callout: {
+              rich_text: [{ text: { content: report } }],
+              icon: { emoji: "📈" },
+              color: "blue_background"
+            }
+          }
+        ]
+      });
+
+      return { content: [{ type: "text", text: `Report generated for Idea ID: ${args.ideaId}. Progress: ${progress}%` }] };
     }
 
     throw new Error(`Tool not found: ${name}`);

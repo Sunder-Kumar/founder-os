@@ -56,22 +56,23 @@ Include the following sections:
 4. Core Features (List 5 key features)
 5. Suggested Tech Stack
 
-Format the response as a JSON object with these keys: "summary", "audience", "problem", "features" (array), and "techStack" (string).
+Format the response as a JSON object with these keys: 
+"summary", "audience", "problem", "features" (array), "techStack" (string),
+"competitorAnalysis" (array of objects with keys: "name", "strength", "weakness", "gap")
 `;
 
-  const response = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      model: "openrouter/auto",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      response_format: { type: "json_object" }
-    },
-    {
+const response = await axios.post(
+  "https://openrouter.ai/api/v1/chat/completions",
+  {
+    model: "openrouter/auto",
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    response_format: { type: "json_object" }
+  },    {
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",

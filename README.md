@@ -4,6 +4,9 @@ Founder OS is an advanced automation framework designed to streamline the early 
 
 ## 🚀 Features
 
+- **Market Gap Analysis**: Generates structured comparison tables in Notion to identify competitor strengths, weaknesses, and opportunities.
+- **Visual Roadmaps (Mermaid.js)**: Automatically generates Gantt charts using Mermaid.js syntax inside Notion code blocks to visualize project timelines.
+- **Automatic Status Reports**: A smart reporting tool that calculates project completion percentage based on Notion task statuses and appends a visual dashboard to your idea page.
 - **Interactive AI Assistant (MCP Server)**: Connect your Notion workspace to Claude Desktop or any MCP client to manage your startup via natural language.
 - **Market Research**: Automatically search the web for competitors and market trends using the Tavily API.
 - **AI-Driven PRD Generation**: Generate professional, structured Product Requirements Documents (PRDs) as sub-pages in your Notion database.
